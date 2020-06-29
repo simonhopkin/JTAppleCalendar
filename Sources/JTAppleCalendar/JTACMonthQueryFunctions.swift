@@ -64,7 +64,25 @@ extension JTACMonthView {
         switch scrollingMode {
         case .stopAtEachCalendarFrame, .stopAtEach, .nonStopTo:
             let frameSection = theTargetContentOffset / fixedScrollSize
-            let roundedFrameSection = floor(frameSection)
+            
+            // Seen a issue here where it incorrectly picks the wrong frame when the frameSection value is very close to the indexPath
+            // for example with an index path of 120
+            // x: 41119.999999999985, y: 0.0
+            // fixedScrollSize: 342.6666666666667
+            // theTargetContentOffset: 41119.999999999985
+            // frameSection: 119.99999999999996
+            // roundedFrameSection: 119.0
+            
+            // so when the frameSection is close to the its ceil value then pick the ceil value rather than the floor.  By close I'm
+            // specifying the distance between the value and its ceil to be less than 1.0E-10
+            
+            var roundedFrameSection = floor(frameSection)
+            let ceilFrameSelection = ceil(frameSection)
+
+            if abs(frameSection.distance(to: ceilFrameSelection)) < 1.0E-10 {
+                roundedFrameSection = ceilFrameSelection
+            }
+            
             if scrollDirection == .horizontal {
                 x = roundedFrameSection * fixedScrollSize
             } else {
